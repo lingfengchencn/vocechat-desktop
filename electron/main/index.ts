@@ -132,7 +132,7 @@ async function createWindow() {
     return { action: "deny" };
   });
   // win.setIcon("");
-  // app.dock.setBadge("9");
+  //app.dock.setBadge("9");
   // Apply electron-updater
   // update(win);
 }
