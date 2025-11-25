@@ -13,6 +13,7 @@ import {
   ipcMain,
   Menu,
   nativeImage,
+  powerMonitor,
   shell,
   Tray
 } from "electron";
@@ -247,6 +248,13 @@ app.whenReady().then(() => {
   //     .then((name) => console.log(`Added Extension:  ${name}`))
   //     .catch((err) => console.log("An error occurred: ", err));
   // }
+});
+
+powerMonitor.on("resume", () => {
+  console.log("event:power-resume");
+  if (win?.webContents) {
+    win.webContents.send("vocechat-system-resume");
+  }
 });
 app.on("before-quit", (evt) => {
   console.log("event:before-quit");

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import clsx from "clsx";
 import { updateAddModalVisible, updateNewMsgMap } from "@/app/slices/data";
@@ -9,7 +9,8 @@ import IconDebug from "@/assets/icons/debug.svg?react";
 import ServerTip from "./server-tip";
 import AddServerModal from "./modal-add-server";
 import RemoveServerModal from "./modal-remove-server";
-import { WebviewTag, ipcRenderer } from "electron";
+import { ipcRenderer } from "electron";
+import type { WebviewTag } from "electron";
 import TitleBar from "./titlebar";
 import WebviewList from "./webviews";
 import ServerList from "./servers";
@@ -20,6 +21,7 @@ const Layout = () => {
   const { servers, active, addModalVisible, newMsgMap } = useAppSelector((store) => store.data);
   const [menuVisibleMap, setMenuVisibleMap] = useState<Record<string, boolean>>({});
   const [reloadVisible, setReloadVisible] = useState(false);
+  const [reloadTokens, setReloadTokens] = useState<Record<string, number>>({});
 
   const dispatch = useDispatch();
   useEffect(() => {
@@ -63,13 +65,33 @@ const Layout = () => {
   const handleAddServer = () => {
     dispatch(updateAddModalVisible(true));
   };
-  const handleReload = () => {
-    const wv = document.querySelector("webview[data-visible='true']") as WebviewTag;
-    if (wv) {
-      wv.reloadIgnoringCache();
-      setReloading(true);
-    }
-  };
+  const forceReloadServer = useCallback(
+    (url: string) => {
+      setReloadTokens((prev) => ({
+        ...prev,
+        [url]: (prev[url] ?? 0) + 1
+      }));
+      if (url === active) {
+        setReloading(true);
+      }
+    },
+    [active]
+  );
+
+  const handleReload = useCallback(() => {
+    if (!active) return;
+    forceReloadServer(active);
+  }, [active, forceReloadServer]);
+
+  useEffect(() => {
+    const handleSystemResume = () => {
+      servers.forEach((server) => forceReloadServer(server.web_url));
+    };
+    ipcRenderer.on("vocechat-system-resume", handleSystemResume);
+    return () => {
+      ipcRenderer.removeListener("vocechat-system-resume", handleSystemResume);
+    };
+  }, [forceReloadServer, servers]);
   const handleOpenWebviewDevTools = () => {
     const wv = document.querySelector("webview[data-visible='true']") as WebviewTag;
     if (wv && wv.dataset.src) {
@@ -159,7 +181,8 @@ const Layout = () => {
           {/* webview list */}
           <WebviewList
             setReloading={setReloading}
-            handleReload={handleReload}
+            requestReload={forceReloadServer}
+            reloadTokens={reloadTokens}
             servers={servers}
             activeURL={active}
           />
