@@ -15,7 +15,8 @@ import {
   nativeImage,
   powerMonitor,
   shell,
-  Tray
+  Tray,
+  webContents
 } from "electron";
 import { VocechatServer } from "@/types/common";
 import { readUserData, USER_DATA_PATH, USER_LOG_PATH, writeUserData } from "./user-data";
@@ -366,6 +367,45 @@ ipcMain.on("remove-server", (event, arg) => {
     Servers.splice(idx, 1);
   }
   console.log("remove-server", arg, idx, Servers);
+});
+ipcMain.on("update-server", (_event, arg) => {
+  const { web_url, credentials } = arg as {
+    web_url: string;
+    credentials?: VocechatServer["credentials"];
+  };
+  const target = Servers.find((item) => item.web_url === web_url);
+  if (!target) return;
+  if (credentials && credentials.username && credentials.password) {
+    target.credentials = credentials;
+  } else {
+    delete target.credentials;
+  }
+  console.log("update-server", { web_url, hasCredentials: !!target.credentials });
+});
+ipcMain.handle("vocechat-webview-kicked", async (_event, arg) => {
+  const { webContentsId, url } = arg as { webContentsId?: number; url: string };
+  if (typeof webContentsId !== "number") {
+    logger.warn("vocechat-webview-kicked missing webContentsId");
+    return false;
+  }
+  const target = webContents.fromId(webContentsId);
+  if (!target) {
+    logger.warn(`vocechat-webview-kicked: no webContents for id ${webContentsId}`);
+    return false;
+  }
+  try {
+    await target.session.clearStorageData();
+    await target.session.clearCache();
+    target.loadURL(url);
+    return true;
+  } catch (error) {
+    logger.error(
+      `Failed to reset webview after kick: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+    return false;
+  }
 });
 // ignore certificate error
 app.commandLine.appendSwitch("ignore-certificate-errors");

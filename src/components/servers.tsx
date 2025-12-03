@@ -17,6 +17,7 @@ type Props = {
   menuVisibleMap: Record<string, boolean>;
   hideContextMenu: (_key: string) => void;
   showContextMenu: (_key: string) => void;
+  onEditCredentials: (_url: string) => void;
 };
 
 const ServerList = ({
@@ -27,7 +28,8 @@ const ServerList = ({
   reloadVisible,
   menuVisibleMap,
   hideContextMenu,
-  showContextMenu
+  showContextMenu,
+  onEditCredentials
 }: Props) => {
   const dispatch = useDispatch();
   const newMsgMap = useAppSelector((store) => store.data.newMsgMap);
@@ -49,6 +51,10 @@ const ServerList = ({
         const unreadCount = newMsgMap[web_url] ?? 0;
         const showUnreadBadge = unreadCount > 0;
         const items = [
+          {
+            text: server.credentials ? "Update Saved Credentials" : "Remember Credentials",
+            clickHandler: onEditCredentials.bind(null, web_url)
+          },
           {
             text: "Remove Server",
             clickHandler: handleRemove.bind(null, web_url),

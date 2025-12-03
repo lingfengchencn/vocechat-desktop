@@ -62,6 +62,16 @@ listenerMiddleware.startListening({
                 console.log("effect remove server");
               }
               break;
+            case "updateServerCredentials":
+              {
+                const { web_url, credentials } = payload as {
+                  web_url: string;
+                  credentials?: VocechatServer["credentials"];
+                };
+                ipcRenderer.send("update-server", { web_url, credentials });
+                console.log("effect update server credentials");
+              }
+              break;
 
             default:
               break;

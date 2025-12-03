@@ -55,6 +55,20 @@ const dataSlice = createSlice({
       } else {
         state.newMsgMap[server] = 0;
       }
+    },
+    updateServerCredentials(
+      state,
+      action: PayloadAction<{ web_url: string; credentials?: VocechatServer["credentials"] }>
+    ) {
+      const { web_url, credentials } = action.payload;
+      const target = state.servers.find((server) => server.web_url === web_url);
+      if (target) {
+        if (credentials && credentials.username && credentials.password) {
+          target.credentials = credentials;
+        } else {
+          delete target.credentials;
+        }
+      }
     }
   }
 });
@@ -65,6 +79,7 @@ export const {
   addServer,
   removeServer,
   switchServer,
-  updateAddModalVisible
+  updateAddModalVisible,
+  updateServerCredentials
 } = dataSlice.actions;
 export default dataSlice.reducer;

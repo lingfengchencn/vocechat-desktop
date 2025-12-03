@@ -3,12 +3,14 @@ import { useDispatch } from "react-redux";
 import clsx from "clsx";
 import { updateAddModalVisible, updateNewMsgMap } from "@/app/slices/data";
 import { useAppSelector } from "@/app/store";
+import { VocechatServer } from "@/types/common";
 import IconAdd from "@/assets/icons/add.svg?react";
 import IconRefresh from "@/assets/icons/refresh.svg?react";
 import IconDebug from "@/assets/icons/debug.svg?react";
 import ServerTip from "./server-tip";
 import AddServerModal from "./modal-add-server";
 import RemoveServerModal from "./modal-remove-server";
+import ModalServerCredentials from "./modal-server-credentials";
 import { ipcRenderer } from "electron";
 import type { WebviewTag } from "electron";
 import TitleBar from "./titlebar";
@@ -22,6 +24,7 @@ const Layout = () => {
   const [menuVisibleMap, setMenuVisibleMap] = useState<Record<string, boolean>>({});
   const [reloadVisible, setReloadVisible] = useState(false);
   const [reloadTokens, setReloadTokens] = useState<Record<string, number>>({});
+  const [credentialsTarget, setCredentialsTarget] = useState<VocechatServer | null>(null);
 
   const dispatch = useDispatch();
   useEffect(() => {
@@ -61,6 +64,11 @@ const Layout = () => {
       };
     });
     hideAll();
+  };
+  const handleEditCredentials = (webUrl: string) => {
+    const target = servers.find((server) => server.web_url === webUrl);
+    if (!target) return;
+    setCredentialsTarget(target);
   };
   const handleAddServer = () => {
     dispatch(updateAddModalVisible(true));
@@ -144,6 +152,7 @@ const Layout = () => {
             servers={servers}
             handleReload={handleReload}
             handleRemove={handleRemove}
+            onEditCredentials={handleEditCredentials}
           />
           <ServerTip content={"Add server"}>
             <div
@@ -198,6 +207,12 @@ const Layout = () => {
         <RemoveServerModal
           webUrl={removeServer}
           handleCancel={updateRemoveServer.bind(null, undefined)}
+        />
+      )}
+      {credentialsTarget && (
+        <ModalServerCredentials
+          server={credentialsTarget}
+          onClose={() => setCredentialsTarget(null)}
         />
       )}
       {addModalVisible ? <AddServerModal /> : null}
